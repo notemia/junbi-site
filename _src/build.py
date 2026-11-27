@@ -20,6 +20,7 @@ ORDER = [('en', '', 'English'), ('ru', 'ru/', 'Русский'), ('fr', 'fr/', '
          ('ko', 'ko/', '한국어'), ('zh-hans', 'zh-hans/', '简体中文'), ('zh-hant', 'zh-hant/', '繁體中文')]
 HREFLANG = {'en': 'en', 'ru': 'ru', 'fr': 'fr', 'de': 'de', 'es': 'es', 'pt-br': 'pt-BR', 'pl': 'pl', 'tr': 'tr', 'ar': 'ar', 'ko': 'ko', 'zh-hans': 'zh-Hans', 'zh-hant': 'zh-Hant'}
 e = lambda s: html.escape(s, quote=False)
+import hashlib; IV = hashlib.md5(open(os.path.join(os.path.dirname(HERE), 'icon.png'), 'rb').read()).hexdigest()[:8]      # ?v= on the icon: a new icon is not hidden by caches
 CSS = """:root{--bg:#fff;--fg:#14161c;--mut:#5b6170;--card:#f4f5f8;--line:#e3e5ea;--acc:#c8102e;--acc2:#003087}
 @media(prefers-color-scheme:dark){:root{--bg:#0e1016;--fg:#eef0f5;--mut:#9aa1b2;--card:#171a23;--line:#262a36;--acc:#ff4d63;--acc2:#6aa0ff}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
@@ -40,15 +41,15 @@ def page(code, folder, kind):
     desc = t['lead'] if kind == '' else (t['priv_intro'] if kind == 'privacy.html' else t['sup_intro'])
     h = [f'<!doctype html><html lang="{HREFLANG[code]}" dir="{d}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
          f'<title>{e(title)}</title><meta name="description" content="{html.escape(desc)}"><meta name="color-scheme" content="light dark">',
-         f'<link rel="icon" href="{up}icon.png"><link rel="apple-touch-icon" href="{up}icon.png"><link rel="stylesheet" href="{up}style.css">',
+         f'<link rel="icon" href="{up}icon.png?v={IV}"><link rel="apple-touch-icon" href="{up}icon.png?v={IV}"><link rel="stylesheet" href="{up}style.css">',
          f'<link rel="canonical" href="{BASE}{folder}{kind}">']
     for c, f, _ in ORDER: h.append(f'<link rel="alternate" hreflang="{HREFLANG[c]}" href="{BASE}{f}{kind}">')
     h.append(f'<link rel="alternate" hreflang="x-default" href="{BASE}{kind}"></head><body>')
-    h.append(f'<header><div class="wrap bar"><a class="brand" href="{up}{folder}"><img src="{up}icon.png" alt=""><span>{e(t["name"])}</span></a><nav>')
+    h.append(f'<header><div class="wrap bar"><a class="brand" href="{up}{folder}"><img src="{up}icon.png?v={IV}" alt=""><span>{e(t["name"])}</span></a><nav>')
     for k, lbl in nav: h.append(f'<a href="{up}{folder}{k}"{" class=on" if k == kind else ""}>{e(lbl)}</a>')
     h.append('</nav></div></header><main class="wrap">')
     if kind == '':
-        h.append(f'<div class="hero"><img src="{up}icon.png" alt="{e(t["name"])}"><div><h1 style="margin:0">{e(t["name"])}</h1><p class="mut" style="font-size:1.2rem;margin:.2rem 0">{e(t["tag"])}</p></div></div>')
+        h.append(f'<div class="hero"><img src="{up}icon.png?v={IV}" alt="{e(t["name"])}"><div><h1 style="margin:0">{e(t["name"])}</h1><p class="mut" style="font-size:1.2rem;margin:.2rem 0">{e(t["tag"])}</p></div></div>')
         h.append(f'<p>{e(t["lead"])}</p><ul class="f">' + ''.join(f'<li>{e(x)}</li>' for x in t['features']) + '</ul>')
         if STORE: h.append(f'<a class="btn" href="{STORE}">App Store</a>')
         h.append(f'<a class="btn o" href="privacy.html">{e(t["privacy"])}</a><a class="btn o" href="support.html">{e(t["support"])}</a>')
