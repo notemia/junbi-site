@@ -2,9 +2,17 @@
 """Builds the Junbi site (landing, privacy policy, support) in 12 languages. Run from the repo root: python3 _src/build.py
 Copy lives in _src/langs.py. English also serves en-GB, Spanish also serves es-MX (same URLs in App Store Connect)."""
 import html, os, shutil, sys
-HERE = os.path.dirname(os.path.abspath(__file__)); SITE = os.path.dirname(HERE); sys.path.insert(0, HERE)
+HERE = os.path.dirname(os.path.abspath(__file__)); SITE = os.path.expanduser(os.environ.get('JUNBI_OUT', os.path.dirname(HERE))); sys.path.insert(0, HERE)
 from langs import L
-BASE = os.environ.get('JUNBI_BASE', 'https://notemia.github.io/junbi-site/')
+from extra import X
+for c, x in X.items():      # 2026-11-27: the full-game purchase and Game Center; the old short version said "no in-app purchases"
+    t = L[c]; t['updated'] = t['updated'].replace('25', '27'); secs = list(t['sections'])
+    secs[0] = (secs[0][0], [x['short']]); secs[2:2] = [(x['buy'][0], [x['buy'][1]]), (x['gc'][0], [x['gc'][1]])]; t['sections'] = secs
+    faq = list(t['faq']); faq.insert(3, x['restore']); t['faq'] = faq
+# Since 2026-11-27 the site lives at https://notemia.app/junbi/ (folder junbi/ of the notemia/app repo, the site of all Notemia apps):
+#   JUNBI_OUT=~/path/to/app/junbi python3 _src/build.py      builds there
+#   python3 _src/build.py redirect                           turns this repo (notemia.github.io/junbi-site) into redirects to it
+BASE = os.environ.get('JUNBI_BASE', 'https://notemia.app/junbi/')
 MAIL = 'helpyoutofeel@gmail.com'; UNITY = 'https://unity.com/legal/privacy-policy'
 STORE = ''   # App Store address of the app, once it is live
 ORDER = [('en', '', 'English'), ('ru', 'ru/', 'Русский'), ('fr', 'fr/', 'Français'), ('de', 'de/', 'Deutsch'), ('es', 'es/', 'Español'),
@@ -60,11 +68,20 @@ def page(code, folder, kind):
     h.append(f'</div>© 2026 Notemia · <a href="mailto:{MAIL}">{MAIL}</a></div></footer></body></html>')
     return ''.join(h)
 
+if sys.argv[1:] == ['redirect']:
+    for c, f, _ in ORDER:
+        for kind in ('', 'privacy.html', 'support.html'):
+            u = BASE + f + kind
+            open(os.path.join(SITE, f, kind or 'index.html'), 'w', encoding='utf-8').write(f'<!doctype html><html lang="{HREFLANG[c]}"><head><meta charset="utf-8"><title>Junbi</title><link rel="canonical" href="{u}"><meta http-equiv="refresh" content="0; url={u}"><meta name="robots" content="noindex"></head><body><a href="{u}">{u}</a><script>location.replace({u!r}+location.hash)</script></body></html>')
+    for x in ('sitemap.xml', 'robots.txt'):
+        if os.path.exists(os.path.join(SITE, x)): os.remove(os.path.join(SITE, x))
+    print('redirects to', BASE); sys.exit()
 for c, f, _ in ORDER:
     os.makedirs(os.path.join(SITE, f), exist_ok=True)
     for kind in ('', 'privacy.html', 'support.html'):
         open(os.path.join(SITE, f, kind or 'index.html'), 'w', encoding='utf-8').write(page(c, f, kind))
 open(os.path.join(SITE, 'style.css'), 'w').write(CSS)
+shutil.copy(os.path.join(os.path.dirname(HERE), 'icon.png'), os.path.join(SITE, 'icon.png')) if os.path.abspath(SITE) != os.path.dirname(HERE) else None
 open(os.path.join(SITE, '.nojekyll'), 'w').write('')
 open(os.path.join(SITE, 'robots.txt'), 'w').write(f'User-agent: *\nAllow: /\nSitemap: {BASE}sitemap.xml\n')
 urls = ''.join(f'<url><loc>{BASE}{f}{k}</loc></url>' for _, f, _ in ORDER for k in ('', 'privacy.html', 'support.html'))
